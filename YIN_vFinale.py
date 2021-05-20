@@ -371,7 +371,7 @@ def TimeFrequencyNumerical():
     print("--- %s seconds ---" % (time.time() - start_time))
     return time_for_period, period_in_time
 
-def TimeFrequencySignal(path='Signals/',file='AUD Euphonium 1 embouchure alliance E3A.wav',fmin=20,fmax=500):
+def TimeFrequencySignal(path='',file='AUD Euphonium 1 embouchure alliance E3A.wav',fmin=20,fmax=500):
 
     start_time = time.time()
     Fs, data = wavfile.read(path+file)
@@ -394,7 +394,7 @@ def TimeFrequencySignal(path='Signals/',file='AUD Euphonium 1 embouchure allianc
     plt.ylabel('Fréquence en Hz')
     plt.xlabel('Temps en secondes')
 
-def Analyse(path = 'Signals/',file = 'AUD Euphonium 1 embouchure alliance E3A.wav'):
+def Analyse(path = '',file = 'AUD Euphonium 1 embouchure alliance E3A.wav'):
     def resetSliders(event):    
         slder1.reset()
         slder2.reset()
