@@ -2,7 +2,8 @@
 """
 Created on Wed May 12 12:56:04 2021
 
-@author: rapha
+@author: raphaël CHOTTIN
+@mail : raphael.chottin.etu@univ-lemans.fr
 """
 import numpy as np
 
@@ -59,7 +60,7 @@ def FAC(x,N,t0,W,Fs):
 
     """ 
     indbeg = t0                    # index of bginning of the current frame
-    indend = np.max([[t0+W],[N]])                     # index of end of the current frame
+    indend = np.min([[t0+W],[N]])                     # index of end of the current frame
     xtmp = x[indbeg:indend]         # extraction of corresponding x values
     # estimation of the (not shifted) ACF #
     # ----------------------------------- #
@@ -150,7 +151,7 @@ def CumulDiff(df) :
     cmndf = df[1:] * range(1, len(df)) / np.cumsum(df[1:]).astype(float) #scipy method
     return np.insert(cmndf, 0, 1)
 
-def Threshold(cmndf):
+def Threshold(cmndf,tau_min):
     """STEP 4 : Absolute threshold
     
     param cmdf : The Cumulative mean normalized difference function (1D numpy array)
@@ -161,8 +162,8 @@ def Threshold(cmndf):
             Might return 0 and cause troubles later
             
     """  
-    th = np.mean(cmndf) - (np.mean(cmndf)-np.min(cmndf))*0.90
-    estimate_tau = 0
+    th = 0.1
+    estimate_tau = tau_min
     if np.min(cmndf)<th:
         while cmndf[estimate_tau]>th:
             estimate_tau += 1
@@ -225,9 +226,10 @@ def YIN(x,N,t0,W,Fs,fmin,fmax):
     return : The Cumulative mean normalized difference function (1D numpy array) and the estimated period in seconds (float) 
 
     """
+    tau_min = int(Fs/fmax)
     df = DiffFunction_new(x,N,t0,W,Fs)
     cmndf = CumulDiff(df)
-    estimate_tau = Threshold(cmndf)
+    estimate_tau = Threshold(cmndf,tau_min)
     estimate_tau = Interpol(cmndf,Fs,estimate_tau)
 
     return cmndf, estimate_tau
@@ -248,6 +250,7 @@ def FundFreqTime(x,t,N,Fs,fmin,fmax):
 
     """  
     tau_max = int(Fs/fmin)
+    tau_min = int(Fs/fmax)
     W = tau_max
     L = int(N/W)  
     term3 = np.zeros(N,dtype=float)
@@ -275,7 +278,7 @@ def FundFreqTime(x,t,N,Fs,fmin,fmax):
             
         if np.sum(df) != 0:
             cmndf = CumulDiff(df)
-            estimate_tau = Threshold(cmndf)
+            estimate_tau = Threshold(cmndf,tau_min)
         
             estimate_tau = Interpol(cmndf,Fs,estimate_tau)
         else: estimate_tau = 1
@@ -299,6 +302,7 @@ def FundFreqTime_new(x,t,N,Fs,fmin,fmax):
 
     """  
     tau_max = int(Fs/fmin)
+    tau_min = int(Fs/fmax)
     W = tau_max
     L = int(N/W)  
     b = np.ones(W)
@@ -324,7 +328,7 @@ def FundFreqTime_new(x,t,N,Fs,fmin,fmax):
         df = df-df[0]
         if np.sum(df) != 0:
             cmndf = CumulDiff(df)
-            estimate_tau = Threshold(cmndf)
+            estimate_tau = Threshold(cmndf,tau_min)
         
             estimate_tau = Interpol(df,Fs,estimate_tau)      #NOTE : here, it's the difference function, not the cmndf!
         else: estimate_tau = 1
@@ -351,14 +355,13 @@ def Signal(Fs=44080,T=4):
     x = np.zeros(N,dtype=float)
     x[:int(N/2)] = x1[:int(N/2)]
     x[int(N/2):] = x2[int(N/2):]
-    x = x1+x2
     N = len(x)
     t = np.arange(N)/Fs 
     return Fs,t,x
 
 def TimeFrequencyNumerical():
 
-    Fs,t,x = Signal(Fs=44080,T=4)
+    Fs,t,x = Signal(Fs=22040,T=4)
      
     fmin = 10
     fmax = 700
@@ -371,7 +374,7 @@ def TimeFrequencyNumerical():
     print("--- %s seconds ---" % (time.time() - start_time))
     return time_for_period, period_in_time
 
-def TimeFrequencySignal(path='',file='AUD Euphonium 1 embouchure alliance E3A.wav',fmin=20,fmax=500):
+def TimeFrequencySignal(path='Signals/',file='AUD Euphonium 1 embouchure alliance E3A.wav',fmin=20,fmax=500):
 
     start_time = time.time()
     Fs, data = wavfile.read(path+file)
@@ -394,7 +397,7 @@ def TimeFrequencySignal(path='',file='AUD Euphonium 1 embouchure alliance E3A.wa
     plt.ylabel('Fréquence en Hz')
     plt.xlabel('Temps en secondes')
 
-def Analyse(path = '',file = 'AUD Euphonium 1 embouchure alliance E3A.wav'):
+def Analyse(path = 'Signals/',file = 'AUD Euphonium 1 embouchure alliance E3A.wav'):
     def resetSliders(event):    
         slder1.reset()
         slder2.reset()
@@ -435,7 +438,7 @@ def Analyse(path = '',file = 'AUD Euphonium 1 embouchure alliance E3A.wav'):
     t = [i/Fs for i in range(N)]
     t0 = 0
     Nt0 = int(t0*Fs)
-    tau_max = 2/fmin
+    tau_max = 1/fmin
     tW = tau_max
     W = int(tW*Fs)
     
@@ -483,5 +486,6 @@ def Analyse(path = '',file = 'AUD Euphonium 1 embouchure alliance E3A.wav'):
     slder1.on_changed(val_update)
     slder2.on_changed(val_update)
     reset.on_clicked(resetSliders)    
+
 
 
